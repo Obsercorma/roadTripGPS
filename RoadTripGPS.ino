@@ -7,6 +7,10 @@
 #define TIME_INTERVAL 8000
 #define ALERT_PIN 8
 
+const uint8_t pausePin = 10;
+const uint8_t reachDestPin = 9;
+bool hasResumed = false;
+
 DHT dht(7, DHT11);
 File fileWrite;
 SoftwareSerial gpsDevice(6, 5);
@@ -15,6 +19,8 @@ String filename = "dat01.txt";
 uint32_t timeCount = 0;
 void setup() {
   pinMode(ALERT_PIN, OUTPUT);
+  pinMode(pausePin, INPUT);
+  pinMode(reachDestPin, INPUT);
   Serial.begin(9600);
   if (!SD.begin(4)) {
     //Serial.println("initialization failed!");
@@ -26,6 +32,8 @@ void setup() {
 }
 
 void loop() {
+  bool valPause = digitalRead(pausePin);
+  bool valReach = digitalRead(reachDestPin);
   while (gpsDevice.available() > 0) {
     gps.encode(gpsDevice.read());
   }
@@ -37,6 +45,13 @@ void loop() {
     if (fileWrite) {
       float h = dht.readHumidity();
       float t = dht.readTemperature();
+      if(valPause){
+        fileWrite.println(hasResumed ? "RT_PAUSED" : "RT_RESUMED");
+        hasResumed = !hasResumed;
+      }
+      if(valReach){
+        fileWrite.println("DEST_REACHED");
+      }
       if (gps.location.isValid() && gps.location.isUpdated()) {
         digitalWrite(ALERT_PIN, LOW);
         fileWrite.print(String(gps.location.lat(), 16));
