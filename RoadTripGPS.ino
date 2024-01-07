@@ -7,9 +7,13 @@
 #define TIME_INTERVAL 8000
 #define ALERT_PIN 8
 
-const uint8_t pausePin = 10;
+//const uint8_t pausePin = 10;
 const uint8_t reachDestPin = 9;
 bool hasResumed = false;
+bool valPause = false;
+bool valReach = false;
+bool stateAlertPin = false;
+uint32_t timeCBtn = 0;
 
 DHT dht(7, DHT11);
 File fileWrite;
@@ -19,7 +23,7 @@ String filename = "dat01.txt";
 uint32_t timeCount = 0;
 void setup() {
   pinMode(ALERT_PIN, OUTPUT);
-  pinMode(pausePin, INPUT_PULLUP);
+  //pinMode(pausePin, INPUT_PULLUP);
   pinMode(reachDestPin, INPUT_PULLUP);
   Serial.begin(9600);
   if (!SD.begin(4)) {
@@ -32,9 +36,35 @@ void setup() {
   Serial.println("Starting");
 }
 
+void blinkAlert(uint8_t vc){
+  for(int i=0;i<vc;i++){
+    digitalWrite(ALERT_PIN, LOW);
+    delay(200);
+    digitalWrite(ALERT_PIN, HIGH);
+    delay(200);
+  }
+  digitalWrite(ALERT_PIN, stateAlertPin);
+}
+
 void loop() {
-  bool valPause = digitalRead(pausePin);
-  bool valReach = digitalRead(reachDestPin);
+  delay(25);
+  bool va = digitalRead(reachDestPin);
+  if(va == LOW) {
+    timeCBtn = millis();
+    do{
+      va = digitalRead(reachDestPin);
+    }
+    while(va == LOW);
+    if((millis()-timeCBtn) > 1000){
+      valReach = true;
+      blinkAlert(2);
+      Serial.println("VALReach!");
+    }else{
+      blinkAlert(4);
+      valPause = true;
+      Serial.println("VALPause!");
+    }
+  }
   while (gpsDevice.available() > 0) {
     gps.encode(gpsDevice.read());
   }
@@ -49,18 +79,20 @@ void loop() {
       if(valPause){
         fileWrite.println(hasResumed ? "RT_PAUSED" : "RT_RESUMED");
         hasResumed = !hasResumed;
-        delay(2000);
+        valPause = false;
+        delay(1000);
       }
-      if(valReach){
+     if(valReach){
         fileWrite.println("DEST_REACHED");
-        delay(2000);
+        valReach = false;
+        delay(1000);
       }
       if (gps.location.isValid() && gps.location.isUpdated()) {
-        digitalWrite(ALERT_PIN, LOW);
+        digitalWrite(ALERT_PIN, (stateAlertPin=LOW));
         fileWrite.print(String(gps.location.lat(), 16));
         fileWrite.print(";" + String(gps.location.lng(), 16));
       } else {
-        digitalWrite(ALERT_PIN, HIGH);
+        digitalWrite(ALERT_PIN, (stateAlertPin=HIGH));
         fileWrite.print("LAT_INVA;LNG_INVA");
       }
       fileWrite.print(";" + ((gps.altitude.isValid() && gps.altitude.isUpdated()) ? (String)gps.altitude.meters() : "ALT_INV"));
