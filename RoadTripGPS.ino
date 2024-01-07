@@ -19,11 +19,12 @@ String filename = "dat01.txt";
 uint32_t timeCount = 0;
 void setup() {
   pinMode(ALERT_PIN, OUTPUT);
-  pinMode(pausePin, INPUT);
-  pinMode(reachDestPin, INPUT);
+  pinMode(pausePin, INPUT_PULLUP);
+  pinMode(reachDestPin, INPUT_PULLUP);
   Serial.begin(9600);
   if (!SD.begin(4)) {
-    //Serial.println("initialization failed!");
+    digitalWrite(ALERT_PIN, HIGH);
+    Serial.println("initialization failed!");
     while (1);
   }
   dht.begin();
@@ -48,9 +49,11 @@ void loop() {
       if(valPause){
         fileWrite.println(hasResumed ? "RT_PAUSED" : "RT_RESUMED");
         hasResumed = !hasResumed;
+        delay(2000);
       }
       if(valReach){
         fileWrite.println("DEST_REACHED");
+        delay(2000);
       }
       if (gps.location.isValid() && gps.location.isUpdated()) {
         digitalWrite(ALERT_PIN, LOW);
