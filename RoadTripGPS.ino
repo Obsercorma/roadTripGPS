@@ -9,15 +9,18 @@
 
 //const uint8_t pausePin = 10;
 const uint8_t reachDestPin = 9;
+const uint8_t dhtPin = 7;
+const uint8_t rxGPSPin = 6;
+const uint8_t txGPSPin = 5;
 bool hasResumed = false;
 bool valPause = false;
 bool valReach = false;
 bool stateAlertPin = false;
 uint32_t timeCBtn = 0;
 
-DHT dht(7, DHT11);
+DHT dht(dhtPin, DHT11);
 File fileWrite;
-SoftwareSerial gpsDevice(6, 5);
+SoftwareSerial gpsDevice(rxGPSPin, txGPSPin); // RX, TX
 TinyGPSPlus gps;
 String filename = "dat01.txt";
 uint32_t timeCount = 0;
