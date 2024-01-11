@@ -4,14 +4,14 @@
 #include<SD.h>
 #include<DHT.h>
 
+//#define DEBUG_MODE
+
 #define TIME_INTERVAL 8000
 #define ALERT_PIN 8
 
 //const uint8_t pausePin = 10;
 const uint8_t reachDestPin = 9;
 const uint8_t dhtPin = 7;
-const uint8_t rxGPSPin = 6;
-const uint8_t txGPSPin = 5;
 bool hasResumed = false;
 bool valPause = false;
 bool valReach = false;
@@ -20,7 +20,7 @@ uint32_t timeCBtn = 0;
 
 DHT dht(dhtPin, DHT11);
 File fileWrite;
-SoftwareSerial gpsDevice(rxGPSPin, txGPSPin); // RX, TX
+SoftwareSerial gpsDevice(6, 5); // RX, TX
 TinyGPSPlus gps;
 String filename = "dat01.txt";
 uint32_t timeCount = 0;
@@ -28,15 +28,21 @@ void setup() {
   pinMode(ALERT_PIN, OUTPUT);
   //pinMode(pausePin, INPUT_PULLUP);
   pinMode(reachDestPin, INPUT_PULLUP);
+  #ifdef DEBUGMODE
   Serial.begin(9600);
+  #endif
   if (!SD.begin(4)) {
     digitalWrite(ALERT_PIN, HIGH);
+    #ifdef DEBUG_MODE
     Serial.println("initialization failed!");
+    #endif
     while (1);
   }
   dht.begin();
   gpsDevice.begin(9600);
+  #ifdef DEBUG_MODE
   Serial.println("Starting");
+  #endif
 }
 
 void blinkAlert(uint8_t vc){
@@ -58,6 +64,7 @@ void loop() {
       va = digitalRead(reachDestPin);
     }
     while(va == LOW);
+    #ifdef DEBUG_MODE
     if((millis()-timeCBtn) > 1000){
       valReach = true;
       blinkAlert(2);
@@ -67,6 +74,15 @@ void loop() {
       valPause = true;
       Serial.println("VALPause!");
     }
+    #else
+    if((millis()-timeCBtn) > 1000){
+      valReach = true;
+      blinkAlert(2);
+    }else{
+      blinkAlert(4);
+      valPause = true;
+    }
+    #endif
   }
   while (gpsDevice.available() > 0) {
     gps.encode(gpsDevice.read());
@@ -114,12 +130,7 @@ void loop() {
       Serial.println("Data written!");
       //char testData[20];
       double testVar = 48.009842666666664;
-      //dtostrf(testVar,17,10,testData);
-      //Serial.println(String(testVar*100.0,12));
       fileWrite.close();
-    } else {
-      //Serial.println("Cannot write into file!");
     }
-    //}
   }
 }
