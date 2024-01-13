@@ -9,6 +9,8 @@
 #define TIME_INTERVAL 8000
 #define ALERT_PIN 8
 
+void blinkAlert(uint8_t vc);
+
 //const uint8_t pausePin = 10;
 const uint8_t reachDestPin = 9;
 const uint8_t dhtPin = 7;
@@ -19,7 +21,7 @@ bool stateAlertPin = false;
 uint32_t timeCBtn = 0;
 
 DHT dht(dhtPin, DHT11);
-File fileWrite;
+File fileWrite;@
 SoftwareSerial gpsDevice(6, 5); // RX, TX
 TinyGPSPlus gps;
 String filename = "dat01.txt";
@@ -28,7 +30,7 @@ void setup() {
   pinMode(ALERT_PIN, OUTPUT);
   //pinMode(pausePin, INPUT_PULLUP);
   pinMode(reachDestPin, INPUT_PULLUP);
-  #ifdef DEBUGMODE
+  #ifdef DEBUG_MODE
   Serial.begin(9600);
   #endif
   if (!SD.begin(4)) {
@@ -36,7 +38,10 @@ void setup() {
     #ifdef DEBUG_MODE
     Serial.println("initialization failed!");
     #endif
-    while (1);
+    while (1){
+      blinkAlert(3);
+      delay(1000);
+    }
   }
   dht.begin();
   gpsDevice.begin(9600);
@@ -67,19 +72,19 @@ void loop() {
     #ifdef DEBUG_MODE
     if((millis()-timeCBtn) > 1000){
       valReach = true;
-      blinkAlert(2);
+      blinkAlert(4);
       Serial.println("VALReach!");
     }else{
-      blinkAlert(4);
+      blinkAlert(2);
       valPause = true;
       Serial.println("VALPause!");
     }
     #else
     if((millis()-timeCBtn) > 1000){
       valReach = true;
-      blinkAlert(2);
-    }else{
       blinkAlert(4);
+    }else{
+      blinkAlert(2);
       valPause = true;
     }
     #endif
@@ -96,7 +101,10 @@ void loop() {
       float h = dht.readHumidity();
       float t = dht.readTemperature();
       if(valPause){
-        fileWrite.println(hasResumed ? "RT_PAUSED" : "RT_RESUMED");
+        #ifdef DEBUG_MODE
+        Serial.println(hasResumed ? "RT_RESUMED" : "RT_PAUSED");
+        #endif
+        fileWrite.println(hasResumed ? "RT_RESUMED" : "RT_PAUSED");
         hasResumed = !hasResumed;
         valPause = false;
         delay(1000);
@@ -129,7 +137,7 @@ void loop() {
       fileWrite.println(";" + (!isnan(h) && !isnan(t) ? (String)dht.computeHeatIndex(t, h, false) + "#V" : "0.0#NV"));
       Serial.println("Data written!");
       //char testData[20];
-      double testVar = 48.009842666666664;
+      //double testVar = 48.009842666666664;
       fileWrite.close();
     }
   }
