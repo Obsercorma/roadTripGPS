@@ -4,7 +4,7 @@
 #include<SD.h>
 #include<DHT.h>
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 #define TIME_INTERVAL 8000
 #define ALERT_PIN 8
@@ -21,7 +21,7 @@ bool stateAlertPin = false;
 uint32_t timeCBtn = 0;
 
 DHT dht(dhtPin, DHT11);
-File fileWrite;@
+File fileWrite;
 SoftwareSerial gpsDevice(6, 5); // RX, TX
 TinyGPSPlus gps;
 String filename = "dat01.txt";
