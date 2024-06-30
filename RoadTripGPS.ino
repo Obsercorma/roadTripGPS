@@ -4,7 +4,7 @@
 #include<SD.h>
 #include<DHT.h>
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 #define TIME_INTERVAL 8000
 #define ALERT_PIN 8
@@ -104,13 +104,13 @@ void loop() {
         #ifdef DEBUG_MODE
         Serial.println(hasResumed ? "RT_RESUMED" : "RT_PAUSED");
         #endif
-        fileWrite.println(hasResumed ? "RT_RESUMED" : "RT_PAUSED");
+        fileWrite.println(hasResumed ? "RT_R" : "RT_P");
         hasResumed = !hasResumed;
         valPause = false;
         delay(1000);
       }
      if(valReach){
-        fileWrite.println("DEST_REACHED");
+        fileWrite.println("DEST_R");
         valReach = false;
         delay(1000);
       }
@@ -120,9 +120,9 @@ void loop() {
         fileWrite.print(";" + String(gps.location.lng(), 16));
       } else {
         digitalWrite(ALERT_PIN, (stateAlertPin=HIGH));
-        fileWrite.print("LAT_INVA;LNG_INVA");
+        fileWrite.print("LT_I;LG_I");
       }
-      fileWrite.print(";" + ((gps.altitude.isValid() && gps.altitude.isUpdated()) ? (String)gps.altitude.meters() : "ALT_INV"));
+      fileWrite.print(";" + ((gps.altitude.isValid() && gps.altitude.isUpdated()) ? (String)gps.altitude.meters() : "AT_I"));
       fileWrite.print(
         ";" + ((gps.date.isValid() && gps.date.isUpdated()) ?
                (String)gps.date.day() + "/" +
@@ -135,9 +135,9 @@ void loop() {
                (String)gps.time.minute() + "#V"
                : "00:00#NV"));
       fileWrite.println(";" + (!isnan(h) && !isnan(t) ? (String)dht.computeHeatIndex(t, h, false) + "#V" : "0.0#NV"));
+      #ifdef DEBUG_MODE
       Serial.println("Data written!");
-      //char testData[20];
-      //double testVar = 48.009842666666664;
+      #endif
       fileWrite.close();
     }
   }
