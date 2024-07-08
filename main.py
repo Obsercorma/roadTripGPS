@@ -116,14 +116,18 @@ sommeCelcius /= (sumPoints-celciusToRemove)
 print(round(sommeDistance,2), round(sommeCelcius,2))
 print(f"NUMBER OF INVALID DHT DATA: {celciusToRemove}/{len(points)}")
 arrayPosCoordsVectors.append(sumPoints-1)
+grpPlElements = folium.FeatureGroup(name="Parcours")
 for posGroupVectors in range(0,len(arrayPosCoordsVectors)-1):
     deniv = calcDeniv(points)
+    locations = groupCoordsVectors[arrayPosCoordsVectors[posGroupVectors]:arrayPosCoordsVectors[posGroupVectors+1]]
+    if locations == []:
+        continue
     folium.PolyLine(
-        locations=groupCoordsVectors[arrayPosCoordsVectors[posGroupPoints]:arrayPosCoordsVectors[posGroupPoints+1]], 
+        locations=locations, 
         tooltip=f"""Trajet: {subString(points[0][3],0,'#')}
         <br/>Parcours {sommeDistance:.2f}km
         <br/>Moyenne Celcius: {sommeCelcius:.2f}°C
-        <br/>Deniv+ {deniv:.2f}m""", color=startLineColor).add_to(world)
+        <br/>Deniv+ {deniv:.2f}m""", color=startLineColor).add_to(grpPlElements)
     posColorLineStarting = COLORS.index(startLineColor)+1
     if posColorLineStarting >= len(COLORS):
         posColorLineStarting = 0
@@ -131,6 +135,8 @@ for posGroupVectors in range(0,len(arrayPosCoordsVectors)-1):
 
 startMarker.add_to(world)
 endMarker.add_to(world)
+grpPlElements.add_to(world)
+
 for m in markerPoints:
     m.add_to(world)
 
