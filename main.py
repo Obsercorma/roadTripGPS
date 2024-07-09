@@ -74,7 +74,10 @@ with open(f"./examples/{fileOpen}") as file:
                 translatedState = "Pause" if "RT_P" in stateMarker else "Reprise" if "RT_R" in stateMarker else "Arrivée"
                 markerPoints.append(folium.Marker(location=[float(tmpData[0]),float(tmpData[1])], popup=f"{translatedState} à {timeHourOffset(subString(tmpData[4],0,'#'),2)}", icon=folium.Icon(color=startMarkerColor, icon='flag' if translatedState == "Arrivée" else 'pause')))
                 print(f"COLOR:{startMarkerColor}")
-                startMarkerColor = COLORS[COLORS.index(startMarkerColor)+1]
+                posMarkerColor = COLORS.index(startMarkerColor)+1
+                if posMarkerColor == len(COLORS):
+                    posMarkerColor = 0
+                startMarkerColor = COLORS[posMarkerColor]
                 stateMarker = ""
                 if translatedState == "Arrivée":
                     arrayPosCoordsVectors.append(posPoints)
