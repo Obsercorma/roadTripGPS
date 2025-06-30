@@ -30,6 +30,7 @@
 */
 
 #define TIME_INTERVAL 8000
+#define TEMP_OFFSET 6.0
 
 void blinkAlert(uint8_t vc, uint16_t d, uint8_t pin, bool sbo=false);
 
@@ -182,12 +183,17 @@ void loop() {
       fileWrite.print(String(gps.location.lat(), 16));
       fileWrite.print(";" + String(gps.location.lng(), 16));
     } else {
+      digitalWrite(greenPin, LOW);
       blinkAlert(2, 200, bluePin);
       #ifdef DEBUG_MODE
       Serial.println("Invalid GPS Data");
       #endif
       fileWrite.print("LT_I;LG_I");
     }
+    #ifdef DEBUG_MODE
+    Serial.print("Tmp:");
+    Serial.println((String)dht.computeHeatIndex((t-TEMP_OFFSET), h, false));
+    #endif
     fileWrite.print(";" + ((gps.altitude.isValid() && gps.altitude.isUpdated()) ? (String)gps.altitude.meters() : "AT_I"));
     fileWrite.print(
       ";" + ((gps.date.isValid() && gps.date.isUpdated()) ?
@@ -203,7 +209,7 @@ void loop() {
     #ifdef DEBUG_MODE
     if(isnan(h) || isnan(t)) Serial.println("Invalid DHT11 data!");
     #endif
-    fileWrite.println(";" + (!isnan(h) && !isnan(t) ? (String)dht.computeHeatIndex(t, h, false) + "#V" : "0.0#NV"));
+    fileWrite.println(";" + (!isnan(h) && !isnan(t) ? (String)dht.computeHeatIndex((t-TEMP_OFFSET), h, false) + "#V" : "0.0#NV"));
     #ifdef DEBUG_MODE
     Serial.println("Data written!");
     #endif
