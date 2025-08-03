@@ -57,6 +57,9 @@ with open(f"./examples/{fileOpen}") as file:
         if("RT_P" in data ) or ("RT_R" in data) or ("DEST_R" in data):
             stateMarker = data
             continue
+        if "RT_END" in data:
+            stateMarker = "RT_END"
+            continue
         if (not "LT_I" in data) and (not "LG_I" in data) and (not "AT_I" in data):
             posPoints+=1
             tmpData = data.split(";")
@@ -71,8 +74,8 @@ with open(f"./examples/{fileOpen}") as file:
                 (float(tmpData[0]),float(tmpData[1]),float(tmpData[2]), tmpData[3], tmpData[4], valTemp)
             )
             if stateMarker != "":
-                translatedState = "Pause" if "RT_P" in stateMarker else "Reprise" if "RT_R" in stateMarker else "Arrivée"
-                markerPoints.append(folium.Marker(location=[float(tmpData[0]),float(tmpData[1])], popup=f"{translatedState} à {timeHourOffset(subString(tmpData[4],0,'#'),2)}", icon=folium.Icon(color=startMarkerColor, icon='flag' if translatedState == "Arrivée" else 'pause')))
+                translatedState = "Pause" if "RT_P" in stateMarker else "Reprise" if "RT_R" in stateMarker else "Fin" if "RT_END" in stateMarker else "Arrivée"
+                markerPoints.append(folium.Marker(location=[float(tmpData[0]),float(tmpData[1])], popup=f"{translatedState} à {timeHourOffset(subString(tmpData[4],0,'#'),2)}", icon=folium.Icon(color=startMarkerColor, icon='flag' if translatedState == "Arrivée" or translatedState == "Fin" else 'pause')))
                 print(f"COLOR:{startMarkerColor}")
                 posMarkerColor = COLORS.index(startMarkerColor)+1
                 if posMarkerColor == len(COLORS):

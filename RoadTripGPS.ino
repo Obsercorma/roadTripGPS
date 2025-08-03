@@ -125,6 +125,7 @@ void loop() {
       delay(10);
     }while(ve == LOW);
     if((millis()-timeCBtn) > 2000){
+      digitalWrite(greenPin, LOW);
       endBtnTriggered = true;
       fileWrite.println("RT_END");
       fileWrite.close();
@@ -143,6 +144,7 @@ void loop() {
     }
     while(vr == LOW);
     if((millis()-timeCBtn) > 1500){
+      digitalWrite(greenPin, LOW);
       valReach = true;
       blinkAlert(1, 1000, bluePin);
       #ifdef DEBUG_MODE
@@ -187,26 +189,26 @@ void loop() {
       blinkAlert(2, 200, bluePin);
       #ifdef DEBUG_MODE
       Serial.println("Invalid GPS Data");
+      Serial.print("LT_I;LG_I");
       #endif
       fileWrite.print("LT_I;LG_I");
     }
-    #ifdef DEBUG_MODE
-    Serial.print("Tmp:");
-    Serial.println((String)dht.computeHeatIndex((t-TEMP_OFFSET), h, false));
-    #endif
-    fileWrite.print(";" + ((gps.altitude.isValid() && gps.altitude.isUpdated()) ? (String)gps.altitude.meters() : "AT_I"));
-    fileWrite.print(
-      ";" + ((gps.date.isValid() && gps.date.isUpdated()) ?
+    String line = ";" + 
+    ((gps.altitude.isValid() && gps.altitude.isUpdated()) ? (String)gps.altitude.meters() : "AT_I") + ";" + 
+    ((gps.date.isValid() && gps.date.isUpdated()) ?
              (String)gps.date.day() + "/" +
              (String)gps.date.month() + "/" +
              (String)gps.date.year() + "#V"
-             : "00/00/2000#NV"));
-    fileWrite.print(
-      ";" + ((gps.time.isValid() && gps.time.isValid()) ?
+             : "00/00/2000#NV") + ";"
+      + ((gps.time.isValid() && gps.time.isValid()) ?
              (String)(gps.time.hour()) + ":" +
              (String)gps.time.minute() + "#V"
-             : "00:00#NV"));
+             : "00:00#NV");
+    fileWrite.print(line);
     #ifdef DEBUG_MODE
+    Serial.println(line);
+    Serial.print("Tmp:");
+    Serial.println((String)dht.computeHeatIndex((t-TEMP_OFFSET), h, false));
     if(isnan(h) || isnan(t)) Serial.println("Invalid DHT11 data!");
     #endif
     fileWrite.println(";" + (!isnan(h) && !isnan(t) ? (String)dht.computeHeatIndex((t-TEMP_OFFSET), h, false) + "#V" : "0.0#NV"));
