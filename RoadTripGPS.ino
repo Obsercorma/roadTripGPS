@@ -4,7 +4,7 @@
 #include<SD.h>
 #include<DHT.h>
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 /*
  * PINS
@@ -44,15 +44,16 @@ const uint8_t bluePin = 10;
 
 const uint8_t sdPin = 4;
 
-bool hasResumed = false;
+bool hasPaused = false;
 bool valPause = false;
 bool valReach = false;
 bool endBtnTriggered = false;
+bool dataAreValid = false;
 uint32_t timeCBtn = 0;
 
 DHT dht(dhtPin, DHT11);
 File fileWrite;
-SoftwareSerial gpsDevice(6, 5);
+SoftwareSerial gpsDevice(5, 6);  // RX, TX
 TinyGPSPlus gps;
 String filename = "dat01.txt";
 uint32_t timeCount = 0;
@@ -144,13 +145,21 @@ void loop() {
     while(vr == LOW);
     if((millis()-timeCBtn) > 1500){
       valReach = true;
+      digitalWrite(greenPin, LOW);
       blinkAlert(1, 1000, bluePin);
+      delay(50);
+      digitalWrite(greenPin, dataAreValid);
+      
       #ifdef DEBUG_MODE
       Serial.println("VALReach!");
       #endif
     }else{
-      blinkAlert(4, 300, bluePin);
       valPause = true;
+      digitalWrite(greenPin, LOW);
+      blinkAlert(4, 300, bluePin);
+      delay(50);
+      digitalWrite(greenPin, dataAreValid);
+
       #ifdef DEBUG_MODE
       Serial.println("VALPause!");
       #endif
@@ -165,11 +174,11 @@ void loop() {
     float h = dht.readHumidity();
     float t = dht.readTemperature();
     if(valPause){
+      hasPaused = !hasPaused;
       #ifdef DEBUG_MODE
-      Serial.println(hasResumed ? "RT_RESUMED" : "RT_PAUSED");
+      Serial.println(hasPaused ? "RT_PAUSED" : "RT_RESUMED");
       #endif
-      fileWrite.println(hasResumed ? "RT_R" : "RT_P");
-      hasResumed = !hasResumed;
+      fileWrite.println(hasPaused ? "RT_P" : "RT_R");
       valPause = false;
       delay(1000);
     }
@@ -179,7 +188,8 @@ void loop() {
       delay(1000);
     }
     String data = "";
-    if (gps.location.isValid() && gps.location.isUpdated()) {
+    dataAreValid = gps.location.isValid() && gps.location.isUpdated();
+    if (dataAreValid) {
       digitalWrite(greenPin, HIGH);
       data += String(gps.location.lat(), 16) + ";" + String(gps.location.lng(), 16);
     } else {
@@ -188,16 +198,25 @@ void loop() {
       #ifdef DEBUG_MODE
       Serial.println("Invalid GPS Data");
       #endif
+      
       data += "LT_I;LG_I";
+    }
+    Serial.print("hasPaused:");
+    Serial.println(hasPaused);
+    if(hasPaused) {
+      #ifdef DEBUG_MODE
+      Serial.println("SKIPPING SAVING DATA [PAUSED]");
+      #endif
+      data = "";
+      return;
     }
     data += ";" + ((gps.date.isValid() && gps.date.isUpdated()) ?
              ((String)gps.date.day() + "/" +
              (String)gps.date.month() + "/" +
-             (String)gps.date.year() + "#V")
-             : "00/00/2000#NV") + ";" + ((gps.time.isValid() && gps.time.isValid()) ?
-             ((String)(gps.time.hour()) + ":" +
-             (String)gps.time.minute() + "#V")
-             : "00:00#NV");
+             (String)gps.date.year() + "#V") : "00/00/2000#NV") + ";" + 
+             ((gps.time.isValid() && gps.time.isValid()) ?
+             ((String)gps.time.hour() + ":" +
+             (String)gps.time.minute() + "#V") : "00:00#NV");
     fileWrite.print(data);
     #ifdef DEBUG_MODE
     Serial.println(data);
