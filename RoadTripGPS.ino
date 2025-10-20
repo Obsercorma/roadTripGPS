@@ -1,7 +1,8 @@
 #include "libs/TinyGPSPlus.h"
 #include<SPI.h>
-#include <SdFat.h> 
+#include <SD.h> 
 #include<DHT.h>
+#include "transmitAPI.h"
 
 #define DEBUG_MODE
 
@@ -30,7 +31,7 @@
 
 #define TIME_INTERVAL 8000
 #define TEMP_OFFSET 6.0
-#define SD_CS 4
+#define SD_CS 5
 
 void blinkAlert(uint8_t vc, uint16_t d, uint8_t pin, bool sbo=false);
 
@@ -40,9 +41,8 @@ const uint8_t dhtPin = 7;
 
 const uint8_t redPin = 2;
 const uint8_t greenPin = 3;
-const uint8_t bluePin = 5;
+const uint8_t bluePin = 4;
 
-const uint8_t sdPin = 4;
 
 bool hasPaused = false;
 bool valPause = false;
@@ -54,11 +54,10 @@ uint32_t timeCBtn = 0;
 DHT dht(dhtPin, DHT11);
 File fileWrite;
 
-// Création du nouveau SPI sur D11/D12/D13 (SERCOM1)
-SdFat sd;  // Instance de la bibliothèque SDFat
+// SdFat sd;  // Instance de la bibliothèque SDFat
 
 //SoftwareSerial gpsDevice(5, 6);  // RX, TX
-HardwareSerial& gpsDevice = Serial1;
+HardwareSerial gpsDevice(2);
 
 TinyGPSPlus gps;
 String filename = "dat01.txt";
@@ -75,7 +74,8 @@ void setup() {
   #ifdef DEBUG_MODE
   Serial.begin(9600);
   #endif
-  if (!sd.begin(SD_CS, SD_SCK_MHZ(8))) {
+  //SPI.begin();
+  if (!SD.begin(SD_CS)) {
     digitalWrite(redPin, HIGH);
     #ifdef DEBUG_MODE
     Serial.println("Initialization failed!");
@@ -85,7 +85,7 @@ void setup() {
       delay(1000);
     }
   }
-  fileWrite = sd.open(filename, FILE_WRITE);
+  fileWrite = SD.open(filename, FILE_WRITE);
   if(!fileWrite){
     #ifdef DEBUG_MODE
     Serial.println("SD or File not readable!");
