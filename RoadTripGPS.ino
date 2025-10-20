@@ -1,7 +1,6 @@
-#include<SoftwareSerial.h>
 #include "libs/TinyGPSPlus.h"
 #include<SPI.h>
-#include<SD.h>
+#include <SdFat.h> 
 #include<DHT.h>
 
 #define DEBUG_MODE
@@ -31,6 +30,7 @@
 
 #define TIME_INTERVAL 8000
 #define TEMP_OFFSET 6.0
+#define SD_CS 4
 
 void blinkAlert(uint8_t vc, uint16_t d, uint8_t pin, bool sbo=false);
 
@@ -40,7 +40,7 @@ const uint8_t dhtPin = 7;
 
 const uint8_t redPin = 2;
 const uint8_t greenPin = 3;
-const uint8_t bluePin = 10;
+const uint8_t bluePin = 5;
 
 const uint8_t sdPin = 4;
 
@@ -53,11 +53,18 @@ uint32_t timeCBtn = 0;
 
 DHT dht(dhtPin, DHT11);
 File fileWrite;
-SoftwareSerial gpsDevice(5, 6);  // RX, TX
+
+// Création du nouveau SPI sur D11/D12/D13 (SERCOM1)
+SdFat sd;  // Instance de la bibliothèque SDFat
+
+//SoftwareSerial gpsDevice(5, 6);  // RX, TX
+HardwareSerial& gpsDevice = Serial1;
+
 TinyGPSPlus gps;
 String filename = "dat01.txt";
 uint32_t timeCount = 0;
 void setup() {
+  
   pinMode(redPin, OUTPUT);
   pinMode(greenPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
@@ -68,17 +75,17 @@ void setup() {
   #ifdef DEBUG_MODE
   Serial.begin(9600);
   #endif
-  if (!SD.begin(sdPin)) {
+  if (!sd.begin(SD_CS, SD_SCK_MHZ(8))) {
     digitalWrite(redPin, HIGH);
     #ifdef DEBUG_MODE
-    Serial.println("initialization failed!");
+    Serial.println("Initialization failed!");
     #endif
     while (1){
       blinkAlert(3, 200, redPin);
       delay(1000);
     }
   }
-  fileWrite = SD.open(filename, FILE_WRITE);
+  fileWrite = sd.open(filename, FILE_WRITE);
   if(!fileWrite){
     #ifdef DEBUG_MODE
     Serial.println("SD or File not readable!");
@@ -99,7 +106,7 @@ void setup() {
   blinkAlert(1, 200, greenPin);
 }
 
-void blinkAlert(uint8_t vc, uint16_t d, uint8_t pin, bool sbo=false){
+void blinkAlert(uint8_t vc, uint16_t d, uint8_t pin, bool sbo){
   for(int i=0;i<vc;i++){
     digitalWrite(pin, LOW);
     delay(d);
@@ -119,6 +126,8 @@ void loop() {
   delay(25);
   bool vr = digitalRead(reachBtn);
   bool ve = digitalRead(endBtn);
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
   if(ve == LOW){
     timeCBtn = millis();
     do{
@@ -128,6 +137,7 @@ void loop() {
     if((millis()-timeCBtn) > 2000){
       endBtnTriggered = true;
       fileWrite.println("RT_END");
+      fileWrite.flush();
       fileWrite.close();
       
       #ifdef DEBUG_MODE
@@ -171,8 +181,7 @@ void loop() {
   if ((millis() - timeCount) > TIME_INTERVAL)
   {
     timeCount = millis();
-    float h = dht.readHumidity();
-    float t = dht.readTemperature();
+    
     if(valPause){
       hasPaused = !hasPaused;
       #ifdef DEBUG_MODE
@@ -225,6 +234,7 @@ void loop() {
     if(isnan(h) || isnan(t)) Serial.println("Invalid DHT11 data!");
     #endif
     fileWrite.println(";" + (!isnan(h) && !isnan(t) ? (String)dht.computeHeatIndex((t-TEMP_OFFSET), h, false) + "#V" : "0.0#NV"));
+    fileWrite.flush();
     #ifdef DEBUG_MODE
     Serial.println("Data written!");
     #endif
